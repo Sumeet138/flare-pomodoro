@@ -6,7 +6,7 @@
 Explorer Link:
 https://coston2-explorer.flare.network/address/0x2034c878d342f263e5658e5f83862568aaa85b16
 
-![Pomodoro App Screenshot](screenshot.jpg)
+![Pomodoro App Screenshot](./Screenshot.jpg)
 
 ---
 
