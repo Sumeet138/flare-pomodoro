@@ -6,8 +6,7 @@
 Explorer Link:
 https://coston2-explorer.flare.network/address/0x2034c878d342f263e5658e5f83862568aaa85b16
 
-### 📸 App Screenshot
-> Add your screenshot here: Place `Screenshot.jpg` in the root directory, commit it to git, then the image will display above.
+![Pomodoro App Screenshot](./images/Screenshot.jpg)
 
 ---
 
