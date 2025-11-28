@@ -1,236 +1,283 @@
 "use client"
 
-import { useState } from "react"
+import { ReactNode, useMemo, useState } from "react"
 import { useAccount } from "wagmi"
 import { usePomodoroContract } from "@/hooks/usePomodoro"
 import { pomodoroAddress } from "@/lib/pomodoroContract"
 
 const PomodoroApp = () => {
-  const { isConnected } = useAccount()
-  const [stakeAmount, setStakeAmount] = useState("0.001")
+    const { isConnected } = useAccount()
+    const [stakeAmount, setStakeAmount] = useState("0.001")
+    const { data, actions, state } = usePomodoroContract()
 
-  const { data, actions, state } = usePomodoroContract()
+    const stakeValue = useMemo(() => {
+        const raw = data.session?.stakeAmount ?? "0"
+        const parsed = parseFloat(raw)
+        return Number.isFinite(parsed) ? parsed : 0
+    }, [data.session?.stakeAmount])
 
-  if (!isConnected) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Web3 Pomodoro</h1>
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-            <p className="text-orange-700">
-              <span className="font-semibold">⚠️ Important:</span> Connect your wallet to use the Pomodoro timer.
-            </p>
-          </div>
-          <p className="text-gray-600">
-            Stake C2FLR to maintain focus during your productivity sessions.
-          </p>
-        </div>
-      </div>
-    )
-  }
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+    }
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  if (data.session && data.session.isActive) {
-    const remaining = data.session.timeRemaining
-
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">Pomodoro Timer</h1>
-          <p className="text-center text-gray-600 mb-8">Stay focused and complete the session!</p>
-
-          <div className="flex flex-col items-center justify-center mb-8">
-            <div className="relative w-64 h-64 rounded-full flex items-center justify-center bg-gradient-to-r from-orange-400 to-red-500 text-white">
-              <div className="absolute inset-8 bg-white rounded-full flex items-center justify-center">
-                <div className="text-5xl font-bold text-orange-600">
-                  {formatTime(remaining)}
+    const renderMeta = () => (
+        <div className="grid gap-4 md:grid-cols-2">
+            <div className="p-5 text-sm rounded-2xl border border-white/10 bg-white/5 text-white/80">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Contract</p>
+                <p className="mt-2 font-mono text-xs break-all text-white/70">{pomodoroAddress}</p>
+                <div className="mt-4">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/50">Pool Balance</p>
+                    <p className="text-2xl font-semibold text-white">{data.contractBalance ?? "0"} C2FLR</p>
                 </div>
-              </div>
             </div>
-          </div>
 
-          <div className="bg-orange-50 rounded-lg p-4 mb-6">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Stake Amount:</span>
-              <span className="font-semibold text-orange-700">{data.session.stakeAmount} C2FLR</span>
-            </div>
-            <div className="mt-2 flex justify-between items-center">
-              <span className="text-gray-600">Potential Reward:</span>
-              <span className="font-semibold text-green-600">
-                {(parseFloat(data.session.stakeAmount) * 1.1).toFixed(4)} C2FLR
-              </span>
-            </div>
-          </div>
+            {state.hash && (
+                <div className="p-5 text-sm rounded-2xl border border-sky-500/40 bg-sky-500/10">
+                    <p className="text-xs uppercase tracking-[0.3em] text-sky-200">Last Tx Hash</p>
+                    <p className="mt-2 font-mono text-xs text-sky-100 break-all">{state.hash}</p>
+                </div>
+            )}
 
-          <div className="space-y-4">
-            <button
-              onClick={actions.completePomodoro}
-              disabled={state.isLoading || remaining > 0}
-              className={`w-full py-4 rounded-xl font-semibold text-lg ${
-                remaining > 0
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:opacity-90'
-              } transition-all`}
-            >
-              {remaining > 0 ? `Complete in ${formatTime(remaining)}` : 'Complete Pomodoro ✓'}
-            </button>
-
-            <button
-              onClick={actions.forfeitPomodoro}
-              disabled={state.isLoading}
-              className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition-all"
-            >
-              Forfeit Session (Lose Stake)
-            </button>
-          </div>
+            {state.error && (
+                <div className="p-5 text-sm rounded-2xl border border-rose-500/40 bg-rose-500/10">
+                    <p className="text-xs uppercase tracking-[0.3em] text-rose-200">Latest Error</p>
+                    <p className="mt-2 text-rose-100">{state.error.message}</p>
+                </div>
+            )}
         </div>
-
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Contract: {pomodoroAddress}</p>
-          <p>Balance: {data.contractBalance} C2FLR</p>
-        </div>
-      </div>
     )
-  }
 
-  if (data.session && data.session.completed && !data.session.withdrawn) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50 p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">Session Complete! 🎉</h1>
-          <p className="text-center text-gray-600 mb-8">Great job staying focused!</p>
-
-          <div className="flex justify-center mb-8">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-              </svg>
+    const renderTestingPanel = () => (
+        <div className="p-6 rounded-3xl border shadow-2xl backdrop-blur border-white/10 bg-white/5 shadow-purple-500/20">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60">Sandbox</p>
+                    <p className="text-2xl font-semibold text-white">Complete Pomodoro (Test)</p>
+                    <p className="mt-2 text-sm text-white/70">
+                        Instantly call the completion logic to verify your stake + bonus payout. Perfect for checking rewards after a live session.
+                    </p>
+                </div>
+                <button
+                    onClick={actions.completePomodoro}
+                    disabled={state.isLoading}
+                    className="inline-flex justify-center items-center px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-500 rounded-2xl shadow-lg transition-colors shadow-indigo-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    {state.isLoading ? "Running Test..." : "Complete Pomodoro (Test)"}
+                </button>
             </div>
-          </div>
-
-          <div className="bg-green-50 rounded-lg p-6 mb-6">
-            <div className="text-center mb-4">
-              <p className="text-gray-600">Congratulations! You&apos;ve completed your Pomodoro.</p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Original Stake:</span>
-                <span className="text-orange-700">{data.session.stakeAmount} C2FLR</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Bonus Reward:</span>
-                <span className="text-green-600">+{(parseFloat(data.session.stakeAmount) * 0.1).toFixed(4)} C2FLR</span>
-              </div>
-              <div className="flex justify-between border-t border-gray-200 pt-3 font-bold">
-                <span>Total Reward:</span>
-                <span className="text-green-600">{(parseFloat(data.session.stakeAmount) * 1.1).toFixed(4)} C2FLR</span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={actions.completePomodoro}
-            disabled={state.isLoading}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition-all"
-          >
-            {state.isLoading ? "Claiming..." : "Claim Reward"}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">Web3 Pomodoro</h1>
-        <p className="text-center text-gray-600 mb-8">Focus with financial incentive</p>
-
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-          <p className="text-orange-700 text-sm">
-            Stake C2FLR to start a 25-minute focus session. Complete it to earn a 10% bonus, or forfeit your stake.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Stake Amount (C2FLR)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.001"
-                min="0.001"
-                value={stakeAmount}
-                onChange={(e) => setStakeAmount(e.target.value)}
-                className="w-full px-4 py-3 pl-12 bg-gray-50 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="0.001"
-              />
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <span className="text-orange-500 font-medium">C2</span>
-              </div>
-            </div>
-            <p className="text-xs text-orange-500 mt-1">
-              Minimum: 0.001 C2FLR | Potential reward: +10% bonus
+            <p className="mt-3 text-xs text-white/55">
+                The contract will behave exactly as it would on main completion, so only use this when you are ready to confirm a payout.
             </p>
-          </div>
-
-          <button
-            onClick={() => actions.startPomodoro(stakeAmount)}
-            disabled={state.isLoading || !stakeAmount || parseFloat(stakeAmount) < 0.001}
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition-all"
-          >
-            {state.isLoading ? "Processing..." : "Start Pomodoro Session"}
-          </button>
         </div>
+    )
 
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <h3 className="font-medium text-gray-700 mb-3">How it works</h3>
-          <ul className="space-y-2 text-sm text-gray-600">
-            <li className="flex items-start">
-              <span className="text-green-500 mr-2">•</span>
-              <span>Stake C2FLR to start a 25-minute session</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-green-500 mr-2">•</span>
-              <span>Complete the session to earn 10% bonus</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-red-500 mr-2">•</span>
-              <span>Quit early and lose your stake</span>
-            </li>
-          </ul>
+    const Page = ({ children, showTester = false }: { children: ReactNode; showTester?: boolean }) => (
+        <div className="px-4 py-14 min-h-screen text-white bg-slate-950">
+            <div className="flex flex-col gap-8 mx-auto max-w-5xl">
+                {children}
+                {showTester && data.session ? renderTestingPanel() : null}
+                {renderMeta()}
+            </div>
         </div>
-      </div>
+    )
 
-      <div className="mt-6 text-center text-sm text-gray-500">
-        <p>Contract: {pomodoroAddress}</p>
-        <p>Balance: {data.contractBalance} C2FLR</p>
-      </div>
+    if (!isConnected) {
+        return (
+            <Page>
+                <section className="p-10 bg-gradient-to-br to-purple-900 rounded-3xl border shadow-2xl border-white/10 from-slate-900 via-slate-900 shadow-purple-500/30">
+                    <p className="text-sm uppercase tracking-[0.4em] text-white/60">Web3 Focus Ritual</p>
+                    <h1 className="mt-4 text-4xl font-semibold leading-tight text-white">
+                        Connect your wallet to unlock the Pomodoro staking experience
+                    </h1>
+                    <p className="mt-4 max-w-2xl text-lg text-white/70">
+                        Stake C2FLR, commit to 25 razor-sharp minutes, and let the chain hold you accountable. Connect a wallet to get started.
+                    </p>
+                    <div className="grid gap-4 mt-8 md:grid-cols-3">
+                        {["25 min focus", "10% finish bonus", "Wallet-gated"].map((item) => (
+                            <div key={item} className="p-4 text-sm text-center rounded-2xl border border-white/10 bg-white/5 text-white/70">
+                                {item}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            </Page>
+        )
+    }
 
-      {state.hash && (
-        <div className="mt-4 max-w-md w-full bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-xs text-blue-700 font-medium">Transaction Hash</p>
-          <p className="text-sm break-all text-blue-600">{state.hash}</p>
-        </div>
-      )}
+    if (data.session && data.session.isActive) {
+        const remaining = data.session.timeRemaining
+        const duration = data.session.duration || 1500
+        const progress = Math.min(100, Math.max(0, ((duration - remaining) / duration) * 100))
 
-      {state.error && (
-        <div className="mt-4 max-w-md w-full bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-sm text-red-700">{state.error.message}</p>
-        </div>
-      )}
-    </div>
-  )
+        return (
+            <Page showTester>
+                <section className="p-10 bg-gradient-to-br from-purple-900 rounded-3xl border shadow-2xl border-white/10 via-slate-900 to-slate-950 shadow-purple-500/30">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            <p className="text-xs uppercase tracking-[0.4em] text-white/60">Session Live</p>
+                            <h1 className="mt-2 text-4xl font-semibold text-white">Stay in the pocket. Rewards are loading...</h1>
+                            <p className="mt-3 text-lg text-white/70">Complete the sprint to unlock {stakeValue ? (stakeValue * 1.1).toFixed(4) : "0.0000"} C2FLR.</p>
+                        </div>
+                        <div className="px-6 py-4 text-sm rounded-2xl border border-white/10 bg-white/5 text-white/70">
+                            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Time remaining</p>
+                            <p className="mt-2 text-3xl font-semibold text-white">{formatTime(remaining)}</p>
+                            <p className="mt-1 text-xs">{progress.toFixed(0)}% of the sprint cleared</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <div className="p-8 text-center rounded-3xl border shadow-xl border-white/10 bg-white/5">
+                        <div className="p-1 mx-auto w-64 h-64 bg-gradient-to-tr from-orange-500 to-rose-500 rounded-full border border-white/10">
+                            <div className="flex flex-col justify-center items-center w-full h-full rounded-full bg-slate-950/80">
+                                <p className="text-sm uppercase tracking-[0.4em] text-white/60">Remaining</p>
+                                <p className="text-5xl font-bold text-white">{formatTime(remaining)}</p>
+                                <div className="mt-4 h-1.5 w-40 overflow-hidden rounded-full bg-white/10">
+                                    <div className="h-full bg-white" style={{ width: `${progress}%` }} />
+                                </div>
+                                <p className="mt-2 text-xs text-white/60">{progress.toFixed(0)}% complete</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-8 space-y-6 rounded-3xl border shadow-xl border-white/10 bg-white/5">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Stat label="Staked" value={`${data.session.stakeAmount} C2FLR`} />
+                            <Stat label="Bonus" value={`+${(stakeValue * 0.1).toFixed(4)} C2FLR`} />
+                            <Stat label="Status" value={state.isLoading ? "Pending..." : "Counting down"} />
+                            <Stat label="Mode" value="Hardcore" />
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <button
+                                onClick={actions.completePomodoro}
+                                disabled={state.isLoading || remaining > 0}
+                                className={`rounded-2xl px-6 py-4 text-lg font-semibold text-white shadow-lg transition-all ${remaining > 0
+                                        ? "cursor-not-allowed bg-white/10 text-white/40"
+                                        : "bg-gradient-to-r from-emerald-400 to-green-500 shadow-emerald-600/40 hover:opacity-95"
+                                    }`}
+                            >
+                                {remaining > 0 ? `Complete in ${formatTime(remaining)}` : "Complete Pomodoro"}
+                            </button>
+
+                            <button
+                                onClick={actions.forfeitPomodoro}
+                                disabled={state.isLoading}
+                                className="px-6 py-4 text-lg font-semibold text-white bg-gradient-to-r from-rose-500 to-red-600 rounded-2xl shadow-lg transition shadow-red-600/40 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                Forfeit Session
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Page>
+        )
+    }
+
+    if (data.session && data.session.completed && !data.session.withdrawn) {
+        return (
+            <Page showTester>
+                <section className="p-10 bg-gradient-to-br from-emerald-900 via-emerald-800 rounded-3xl border shadow-2xl border-emerald-400/30 to-slate-950 shadow-emerald-500/30">
+                    <p className="text-xs uppercase tracking-[0.4em] text-emerald-200">Victory Lap</p>
+                    <h1 className="mt-3 text-4xl font-semibold text-white">Session complete! Collect your winnings.</h1>
+                    <p className="mt-3 text-lg text-emerald-100">You locked in focus, now unlock {(stakeValue * 1.1).toFixed(4)} C2FLR.</p>
+
+                    <div className="grid gap-5 mt-8 md:grid-cols-3">
+                        <RewardStat label="Original stake" value={`${data.session.stakeAmount} C2FLR`} />
+                        <RewardStat label="Bonus" value={`+${(stakeValue * 0.1).toFixed(4)} C2FLR`} />
+                        <RewardStat label="Total" value={`${(stakeValue * 1.1).toFixed(4)} C2FLR`} highlight />
+                    </div>
+
+                    <button
+                        onClick={actions.completePomodoro}
+                        disabled={state.isLoading}
+                        className="px-8 py-4 mt-8 text-lg font-semibold bg-gradient-to-r from-emerald-400 to-green-500 rounded-2xl shadow-xl transition text-slate-950 shadow-emerald-500/30 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {state.isLoading ? "Processing..." : "Claim Reward"}
+                    </button>
+                </section>
+            </Page>
+        )
+    }
+
+    return (
+        <Page>
+            <section className="p-10 bg-gradient-to-br to-indigo-900 rounded-3xl border shadow-2xl border-white/10 from-slate-900 via-slate-900 shadow-indigo-500/30">
+                <p className="text-xs uppercase tracking-[0.4em] text-indigo-200">Next-level focus</p>
+                <h1 className="mt-3 text-4xl font-semibold text-white">Stake, focus, and get rewarded for deep work.</h1>
+                <p className="mt-3 max-w-2xl text-lg text-white/70">
+                    Set the stake amount that keeps you honest. You either finish the sprint and receive 110% back, or get taxed for bailing.
+                </p>
+            </section>
+
+            <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+                <div className="p-8 rounded-3xl border shadow-xl border-white/10 bg-white/5">
+                    <h2 className="text-2xl font-semibold text-white">Start a new Pomodoro</h2>
+                    <p className="mt-2 text-sm text-white/70">Minimum stake: 0.001 C2FLR · Default duration: 25 minutes</p>
+
+                    <div className="mt-6 space-y-4">
+                        <label className="text-sm font-medium text-white/80" htmlFor="stake">
+                            Stake Amount (C2FLR)
+                        </label>
+                        <div className="relative">
+                            <input
+                                id="stake"
+                                type="number"
+                                step="0.001"
+                                min="0.001"
+                                value={stakeAmount}
+                                onChange={(e) => setStakeAmount(e.target.value)}
+                                className="px-5 py-4 w-full text-lg text-white rounded-2xl border outline-none border-white/10 bg-slate-900/60 focus:border-indigo-400"
+                                placeholder="0.001"
+                            />
+                            <span className="absolute right-4 top-1/2 text-sm -translate-y-1/2 pointer-events-none text-white/60">C2FLR</span>
+                        </div>
+
+                        <button
+                            onClick={() => actions.startPomodoro(stakeAmount)}
+                            disabled={state.isLoading || !stakeAmount || parseFloat(stakeAmount) < 0.001}
+                            className="px-6 py-4 mt-6 w-full text-lg font-semibold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl shadow-xl transition shadow-indigo-500/40 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {state.isLoading ? "Summoning contract..." : "Launch Pomodoro"}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-8 space-y-4 text-sm rounded-3xl border shadow-xl border-white/10 bg-white/5 text-white/70">
+                    <h3 className="text-xl font-semibold text-white">Runbook</h3>
+                    <ul className="space-y-3">
+                        <li>• Stake C2FLR and lock a 25-minute session.</li>
+                        <li>• Finish the sprint to withdraw stake + 10% bonus.</li>
+                        <li>• Quit early and the stake tops up the communal pool.</li>
+                    </ul>
+                    <div className="p-4 text-xs rounded-2xl border border-white/10 bg-white/5 text-white/60">
+                        Pro tip: start small, prove consistency, then raise the stakes.
+                    </div>
+                </div>
+            </div>
+        </Page>
+    )
 }
 
+const Stat = ({ label, value }: { label: string; value: string }) => (
+    <div className="p-4 text-left rounded-2xl border border-white/10 bg-slate-950/60">
+        <p className="text-xs uppercase tracking-[0.3em] text-white/50">{label}</p>
+        <p className="mt-2 text-xl font-semibold text-white">{value}</p>
+    </div>
+)
+
+const RewardStat = ({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) => (
+    <div
+        className={`rounded-2xl border p-5 text-center ${highlight
+                ? "text-emerald-50 border-emerald-300 bg-emerald-400/10"
+                : "text-white border-white/10 bg-white/5"
+            }`}
+    >
+        <p className="text-xs uppercase tracking-[0.3em] opacity-70">{label}</p>
+        <p className="mt-2 text-2xl font-semibold">{value}</p>
+    </div>
+)
+
 export default PomodoroApp
-
-
