@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useAccount } from "wagmi"
 import { usePomodoroContract } from "@/hooks/usePomodoro"
 import { pomodoroAddress } from "@/lib/pomodoroContract"
 
 const PomodoroApp = () => {
-  const { isConnected, address } = useAccount()
+  const { isConnected } = useAccount()
   const [stakeAmount, setStakeAmount] = useState("0.001")
 
   const { data, actions, state } = usePomodoroContract()
@@ -35,7 +35,6 @@ const PomodoroApp = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Active session view
   if (data.session && data.session.isActive) {
     const remaining = data.session.timeRemaining
 
@@ -99,7 +98,6 @@ const PomodoroApp = () => {
     )
   }
 
-  // Completed session awaiting claim
   if (data.session && data.session.completed && !data.session.withdrawn) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50 p-4">
@@ -117,7 +115,7 @@ const PomodoroApp = () => {
 
           <div className="bg-green-50 rounded-lg p-6 mb-6">
             <div className="text-center mb-4">
-              <p className="text-gray-600">Congratulations! You've completed your Pomodoro.</p>
+              <p className="text-gray-600">Congratulations! You&apos;ve completed your Pomodoro.</p>
             </div>
 
             <div className="space-y-3">
@@ -137,7 +135,7 @@ const PomodoroApp = () => {
           </div>
 
           <button
-            onClick={actions.completePomodoro} // Reuse function to claim reward
+            onClick={actions.completePomodoro}
             disabled={state.isLoading}
             className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition-all"
           >
@@ -148,7 +146,6 @@ const PomodoroApp = () => {
     )
   }
 
-  // Default state - start new pomodoro
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
@@ -235,3 +232,5 @@ const PomodoroApp = () => {
 }
 
 export default PomodoroApp
+
+
