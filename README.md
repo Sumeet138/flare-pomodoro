@@ -1,9 +1,12 @@
 # 🍅 Web3 Pomodoro App (Flare / Coston2)
 
 ## 📍 Contract Address
+
 **0x2034c878d342f263e5658e5f83862568aaa85b16**
 Explorer Link:
 https://coston2-explorer.flare.network/address/0x2034c878d342f263e5658e5f83862568aaa85b16
+
+![Pomodoro App Screenshot](screenshot.jpg)
 
 ---
 
@@ -48,18 +51,21 @@ The UI allows users to:
 ## ✨ Features
 
 ### 🎯 Productivity Features
+
 - 25-minute Pomodoro timer with visual countdown
 - Stake-based financial incentive system
 - Session completion rewards (10% bonus)
 - Clear visual feedback for all states
 
 ### 🛡 Security Features
+
 - Time-based session validation
 - Stake forfeiture penalty for early quitting
 - Session state management
 - Owner withdrawal function for contract management
 
 ### 🧩 Technical Features
+
 - Deployed on **Flare Coston2 testnet**
 - Lightweight and gas-efficient
 - Clean, simple ABI
@@ -69,6 +75,7 @@ The UI allows users to:
   - **React server components**
 
 ### 🖥 Frontend
+
 - Wallet-gated interactions
 - Real-time contract state updates
 - Loading + pending state handling
@@ -84,19 +91,25 @@ Traditional productivity apps lack real consequences for distraction.
 This project solves this issue by providing:
 
 ### ✔ Financial Stakes
+
 Users must stake real tokens to maintain focus, creating genuine accountability.
 
 ### ✔ Trustless Execution
+
 Session completion is enforced algorithmically with no manual intervention.
 
 ### ✔ Transparent Mechanics
+
 All stakes and rewards are publicly visible on-chain.
 
 ### ✔ Automated Rewards
+
 Rewards are distributed automatically with no manual handling.
 
 ### ✔ Educational Value
+
 Helps developers understand:
+
 - Token staking and rewards
 - Time-based smart contract logic
 - Session management patterns
